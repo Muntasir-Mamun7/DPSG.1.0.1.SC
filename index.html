@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stackelberg Game - Data Processing Allocation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f8efc;
+            --success: #06d6a0;
+            --info: #0dcaf0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background-color: #f9f9fe;
+            color: #333;
+            padding-bottom: 2rem;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            font-weight: 600;
+        }
+        
+        .section-title {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .badge {
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 0.5rem 1.25rem;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+        }
+        
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.25);
+            border-color: var(--primary);
+        }
+        
+        .info-box {
+            background-color: #f8f9fe;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .status-box {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        
+        .status-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            flex: 1;
+        }
+        
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .status-label {
+            color: #777;
+            font-size: 0.875rem;
+        }
+        
+        .chart-container {
+            position: relative; 
+            height: 250px;
+            margin-bottom: 1rem;
+        }
+        
+        .user-pill {
+            background: white;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .type-a-badge {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .type-b-badge {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .flash-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 350px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            visibility: hidden;
+        }
+        
+        .spinner-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner-container">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <p class="mb-0" id="loadingMessage">Processing transaction...</p>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div id="flashMessages"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">Stackelberg Game DApp</a>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <span id="networkBadge" class="badge bg-secondary">Unknown Network</span>
+                </div>
+                <div id="walletSection">
+                    <button id="connectWalletBtn" class="btn btn-sm btn-light">Connect Wallet</button>
+                    <span id="accountInfo" class="d-none text-white">Connected: <span id="accountAddress"></span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Game Status Overview -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Game Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="status-box mb-3">
+                    <div class="status-item">
+                        <div class="status-value" id="roundNumber">-</div>
+                        <div class="status-label">Round</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="centerPrice">-</div>
+                        <div class="status-label">Center Price (P₁)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="dronePrice">-</div>
+                        <div class="status-label">Drone Price (P₂)</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="convergedStatus">No</div>
+                        <div class="status-label">Converged</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="dronesStatus">No</div>
+                        <div class="status-label">Drones Active</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-box">
+                            <h6>Center Stats</h6>
+                            <div class="d-flex justify-content-between">
+                                <div>Capacity:</div>
+                                <div><span id="centerCapacity">500</span> units</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div>Current Usage:</div>
+                                <div><span id="centerUsage">0</span> units</div>
+                            </div>
+                            <div class="mt-2">
+                                <div class="progress" style="height: 8px;">
+                                    <div id="centerProgressBar" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="info-box">
+                            <h6>Drone Stats</h6>
+                            <div class="d-flex justify-content-between">
+                                <div>Capacity:</div>
+                                <div><span id="droneCapacity">300</span> units</div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <div>Current Usage:</div>
+                                <div><span id="droneUsage">0</span> units</div>
+                            </div>
+                            <div class="mt-2">
+                                <div class="progress" style="height: 8px;">
+                                    <div id="droneProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- User Section -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">User Interface</h5>
+                        <div id="userType" class="badge bg-secondary d-none">Not Registered</div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Registration Form -->
+                        <div id="registerForm">
+                            <h6 class="section-title">Register as User</h6>
+                            <form id="userRegistrationForm">
+                                <div class="mb-3">
+                                    <label for="dataQuality" class="form-label">Initial Data Quality (D₁)</label>
+                                    <input type="number" class="form-control" id="dataQuality" min="1" max="99" required>
+                                    <div class="form-text">Enter a value between 1 and 99 (must be less than D2_CENTER = 100)</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Register</button>
+                            </form>
+                        </div>
+
+                        <!-- Submit Q Form -->
+                        <div id="submitQForm" class="d-none">
+                            <h6 class="section-title">Submit Data Amount (Q)</h6>
+                            <div class="alert alert-info">
+                                Based on current prices and your parameters, we've calculated your optimal Q value.
+                                Click "Submit Optimal Q" to submit this value.
+                            </div>
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Calculated Optimal Q Value:</span>
+                                    <span id="calculatedQValue">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Processing Type:</span>
+                                    <span id="userProcessingType">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Current Price:</span>
+                                    <span id="userCurrentPrice">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Your Utility:</span>
+                                    <span id="userUtility">-</span>
+                                </div>
+                            </div>
+                            <button id="submitQBtn" class="btn btn-primary">Submit Optimal Q</button>
+                        </div>
+
+                        <!-- Make Payment Form -->
+                        <div id="makePaymentForm" class="d-none">
+                            <h6 class="section-title">Make Payment</h6>
+                            <div class="alert alert-success">
+                                The game has converged! Now you need to make the payment for your data processing.
+                            </div>
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Your Data Amount (Q):</span>
+                                    <span id="paymentQValue">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Processing Type:</span>
+                                    <span id="paymentProcessingType">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Price:</span>
+                                    <span id="paymentPrice">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Total Payment Required:</span>
+                                    <span id="totalPaymentRequired" class="fw-bold">-</span>
+                                </div>
+                            </div>
+                            <button id="makePaymentBtn" class="btn btn-primary">Make Payment</button>
+                        </div>
+
+                        <!-- Payment Complete -->
+                        <div id="paymentComplete" class="d-none">
+                            <div class="text-center py-4">
+                                <div class="display-1 text-success mb-3">✓</div>
+                                <h5>Payment Complete</h5>
+                                <p class="text-muted">You have successfully made your payment.</p>
+                                <div class="alert alert-info">
+                                    <div id="compensationMessage"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price History Chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Price Evolution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Section & Players List -->
+            <div class="col-lg-4">
+                <!-- Admin Controls -->
+                <div id="adminPanel" class="card mb-4 d-none">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Admin Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button id="startGameBtn" class="btn btn-success w-100 mb-2">Start Game</button>
+                            <button id="endRoundBtn" class="btn btn-warning w-100 mb-2">End Current Round</button>
+                            <button id="distributeFundsBtn" class="btn btn-info w-100">Distribute Funds</button>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Fund Distribution Debug</h6>
+                            <button id="checkFundsBtn" class="btn btn-sm btn-outline-secondary mb-2">Check Distribution</button>
+                            <div id="fundDebugInfo" class="d-none">
+                                <div class="d-flex justify-content-between">
+                                    <span>Contract Balance:</span>
+                                    <span id="debugContractBalance">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Required Funds:</span>
+                                    <span id="debugRequiredFunds">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Center Revenue:</span>
+                                    <span id="debugCenterRevenue">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Drone Revenue:</span>
+                                    <span id="debugDroneRevenue">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Compensation Owed:</span>
+                                    <span id="debugCompensationOwed">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Players List -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Players</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="noPlayersMessage">No players registered yet.</div>
+                        <div id="playersList" class="d-none">
+                            <!-- Players will be listed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Utilities Panel -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">System Utilities</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Center Utility:</span>
+                                <span id="centerUtility">-</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Drone Utility:</span>
+                                <span id="droneUtility">-</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Total User Utility:</span>
+                                <span id="totalUserUtility">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Footer -->
+<footer class="bg-white text-center p-4 mt-5">
+    <div class="container">
+        <p class="mb-0">© 2025 Muntasir Al Mamun. All rights reserved.</p>
+    </div>
+</footer>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Contract Configuration
+        const contractAddress = '0x19d5BFBF3B2C9fB6CEBDFb8fc9F4592f61c54d4C'; 
+        const contractABI = [
+        [
+        {
+            "inputs": [
+                {
+                    "internalType": "address payable",
+                    "name": "_dataProcessingCenter",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address payable",
+                    "name": "_dronePool",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_initialP1",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_initialP2",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "_overloadThreshold",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "roundNumber",
+                    "type": "uint256"
+                }
+            ],
+            "name": "ConvergenceReached",
+            "type": "event"
+        },
+        {
+            "inputs": [],
+            "name": "distributeFunds",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "endRound",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "recipient",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                }
+            ],
+            "name": "FundsDistributed",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "P1",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "P2",
+                    "type": "uint256"
+                }
+            ],
+            "name": "GameStarted",
+            "type": "event"
+        },
+        {
+            "inputs": [],
+            "name": "makePayment",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "payer",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                }
+            ],
+            "name": "PaymentReceived",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "newP1",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "newP2",
+                    "type": "uint256"
+                }
+            ],
+            "name": "PricesUpdated",
+            "type": "event"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "Q",
+                    "type": "uint256"
+                }
+            ],
+            "name": "QSubmitted",
+            "type": "event"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "_D1",
+                    "type": "uint256"
+                }
+            ],
+            "name": "registerUser",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "startGame",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "submitQ",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "D1",
+                    "type": "uint256"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "index",
+                    "type": "uint256"
+                }
+            ],
+            "name": "UserRegistered",
+            "type": "event"
+        },
+        {
+            "stateMutability": "payable",
+            "type": "receive"
+        },
+        {
+            "inputs": [],
+            "name": "A",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "admin",
+            "outputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "ALPHA",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "B",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "C_A",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "C_DRONE",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "CENTER_CAPACITY",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "name": "compensationReceived",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "D2_CENTER",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "D2_DRONE",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "dataProcessingCenter",
+            "outputs": [
+                {
+                    "internalType": "address payable",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "debugFundDistribution",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "contractBalance",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "totalRequired",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "centerRevenue",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "droneRevenue",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "compensationOwed",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "DRONE_CAPACITY",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "dronePool",
+            "outputs": [
+                {
+                    "internalType": "address payable",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "dronesActivated",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "EPSILON",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getCenterUtility",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "getDroneUtility",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "user",
+                    "type": "address"
+                }
+            ],
+            "name": "getRequiredPayment",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_user",
+                    "type": "address"
+                }
+            ],
+            "name": "getUserUtility",
+            "outputs": [
+                {
+                    "internalType": "int256",
+                    "name": "",
+                    "type": "int256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "isConverged",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "K",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "LAMBDA",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "overloadThreshold",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "P1",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "P2",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "roundNumber",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "totalQ1",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [],
+            "name": "totalQ2",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "name": "users",
+            "outputs": [
+                {
+                    "internalType": "address payable",
+                    "name": "userAddress",
+                    "type": "address"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "Q",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "D1",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "isTypeB",
+                    "type": "bool"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "hasSubmitted",
+                    "type": "bool"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "hasPaid",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ],
+            {"inputs":[{"internalType":"address payable","name":"_dataProcessingCenter","type":"address"},{"internalType":"address payable","name":"_dronePool","type":"address"},{"internalType":"uint256","name":"_initialP1","type":"uint256"},{"internalType":"uint256","name":"_initialP2","type":"uint256"},{"internalType":"uint256","name":"_overloadThreshold","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"roundNumber","type":"uint256"}],"name":"ConvergenceReached","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"FundsDistributed","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"P1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"P2","type":"uint256"}],"name":"GameStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"payer","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"PaymentReceived","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newP1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newP2","type":"uint256"}],"name":"PricesUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"Q","type":"uint256"}],"name":"QSubmitted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"D1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"index","type":"uint256"}],"name":"UserRegistered","type":"event"},{"inputs":[],"name":"A","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"ALPHA","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"B","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"CENTER_CAPACITY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"C_A","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"C_DRONE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"D2_CENTER","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"D2_DRONE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DRONE_CAPACITY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"EPSILON","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"K","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LAMBDA","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"P1","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"P2","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"compensationReceived","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dataProcessingCenter","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"debugFundDistribution","outputs":[{"internalType":"uint256","name":"contractBalance","type":"uint256"},{"internalType":"uint256","name":"totalRequired","type":"uint256"},{"internalType":"uint256","name":"centerRevenue","type":"uint256"},{"internalType":"uint256","name":"droneRevenue","type":"uint256"},{"internalType":"uint256","name":"compensationOwed","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"distributeFunds","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"dronePool","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dronesActivated","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"endRound","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getCenterUtility","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getDroneUtility","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getRequiredPayment","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getUserUtility","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"isConverged","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"makePayment","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"overloadThreshold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_D1","type":"uint256"}],"name":"registerUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"roundNumber","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"startGame","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"submitQ","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"totalQ1","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalQ2","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"users","outputs":[{"internalType":"address payable","name":"userAddress","type":"address"},{"internalType":"uint256","name":"Q","type":"uint256"},{"internalType":"uint256","name":"D1","type":"uint256"},{"internalType":"bool","name":"isTypeB","type":"bool"},{"internalType":"bool","name":"hasSubmitted","type":"bool"},{"internalType":"bool","name":"hasPaid","type":"bool"}],"stateMutability":"view","type":"function"},{"stateMutability":"payable","type":"receive"}
+        ];
+
+        // Global Variables
+        let web3;
+        let contract;
+        let userAccount;
+        let isAdmin = false;
+        let userRegistered = false;
+        let userIndex;
+        let userType; // null = not registered, false = Type A, true = Type B
+        let priceHistory = { 
+            p1: [], 
+            p2: [], 
+            rounds: [] 
+        };
+        let priceChart;
+
+        // Initialize Web3 and Contract
+        async function init() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                
+                // Check if we already have access
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                    if (accounts.length > 0) {
+                        await connectAccount(accounts[0]);
+                    }
+                } catch (error) {
+                    console.error("Error checking accounts:", error);
+                }
+                
+                // Setup event listeners
+                window.ethereum.on('accountsChanged', handleAccountsChanged);
+                window.ethereum.on('chainChanged', () => window.location.reload());
+                
+                initPriceChart();
+                setupEventListeners();
+                await updateGameState();
+                
+                return true;
+            } else {
+                showAlert("MetaMask not detected! Please install MetaMask to use this DApp.", "danger");
+                return false;
+            }
+        }
+
+        // Connect Wallet
+        async function connectWallet() {
+            if (!window.ethereum) {
+                showAlert("MetaMask not detected! Please install MetaMask.", "danger");
+                return;
+            }
+            
+            try {
+                showLoading("Connecting to wallet...");
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                await connectAccount(accounts[0]);
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                if (error.code === 4001) {
+                    showAlert("Connection request rejected. Please approve the connection.", "warning");
+                } else {
+                    showAlert("Error connecting to wallet: " + error.message, "danger");
+                }
+            }
+        }
+        
+        // Handle account connection
+        async function connectAccount(account) {
+            userAccount = account;
+            updateNetworkInfo();
+            updateAccountDisplay();
+            
+            // Check if user is admin
+            const adminAddress = await contract.methods.admin().call();
+            isAdmin = (account.toLowerCase() === adminAddress.toLowerCase());
+            
+            if (isAdmin) {
+                document.getElementById('adminPanel').classList.remove('d-none');
+            } else {
+                document.getElementById('adminPanel').classList.add('d-none');
+            }
+            
+            await checkUserStatus();
+        }
+        
+        // Initialize Price Chart
+        function initPriceChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Center Price (P₁)',
+                            data: [],
+                            borderColor: '#4361ee',
+                            backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Drone Price (P₂)',
+                            data: [],
+                            borderColor: '#3f8efc',
+                            backgroundColor: 'rgba(63, 142, 252, 0.1)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Round'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Price'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update Price Chart
+        function updatePriceChart() {
+            priceChart.data.labels = priceHistory.rounds;
+            priceChart.data.datasets[0].data = priceHistory.p1;
+            priceChart.data.datasets[1].data = priceHistory.p2;
+            priceChart.update();
+        }
+
+        // Check User Registration Status
+        async function checkUserStatus() {
+            try {
+                // Try to find the user in the user list
+                userRegistered = false;
+                userIndex = null;
+                
+                let i = 0;
+                let userExists = true;
+                
+                while (userExists) {
+                    try {
+                        const user = await contract.methods.users(i).call();
+                        if (user.userAddress.toLowerCase() === userAccount.toLowerCase()) {
+                            userRegistered = true;
+                            userIndex = i;
+                            userType = user.isTypeB;
+                            break;
+                        }
+                        i++;
+                    } catch (error) {
+                        userExists = false;
+                    }
+                }
+                
+                updateUserInterface();
+                
+            } catch (error) {
+                console.error("Error checking user status:", error);
+                showAlert("Error checking user status: " + error.message, "danger");
+            }
+        }
+        
+        // Update User Interface
+        async function updateUserInterface() {
+            if (userRegistered) {
+                // User is registered
+                document.getElementById('registerForm').classList.add('d-none');
+                document.getElementById('userType').classList.remove('d-none');
+                
+                // Get user data
+                const user = await contract.methods.users(userIndex).call();
+                
+                // Update user type badge
+                const userTypeElement = document.getElementById('userType');
+                if (user.isTypeB) {
+                    userTypeElement.textContent = "Type B (Drone User)";
+                    userTypeElement.classList.remove('bg-primary', 'bg-secondary');
+                    userTypeElement.classList.add('bg-info');
+                } else {
+                    userTypeElement.textContent = "Type A (Center User)";
+                    userTypeElement.classList.remove('bg-info', 'bg-secondary');
+                    userTypeElement.classList.add('bg-primary');
+                }
+                
+                // Check game state
+                const isConverged = await contract.methods.isConverged().call();
+                
+                if (isConverged) {
+                    // Check if user has already paid
+                    if (user.hasPaid) {
+                        document.getElementById('submitQForm').classList.add('d-none');
+                        document.getElementById('makePaymentForm').classList.add('d-none');
+                        
+                        // Show payment complete message
+                        document.getElementById('paymentComplete').classList.remove('d-none');
+                        
+                        // Check if user received compensation
+                        if (user.isTypeB) {
+                            const compensationAmount = await contract.methods.compensationReceived(userAccount).call();
+                            const bonusMessage = compensationAmount > 0 ?
+                                `You received ${compensationAmount} wei as a Type B user bonus.` : 
+                                "Waiting to receive Type B user bonus.";
+                            document.getElementById('compensationMessage').textContent = bonusMessage;
+                        } else {
+                            document.getElementById('compensationMessage').textContent = "No bonus is applicable for Type A users.";
+                        }
+                    } else {
+                        // Show payment form
+                        document.getElementById('submitQForm').classList.add('d-none');
+                        document.getElementById('paymentComplete').classList.add('d-none');
+                        document.getElementById('makePaymentForm').classList.remove('d-none');
+                        
+                        // Update payment details
+                        document.getElementById('paymentQValue').textContent = user.Q;
+                        document.getElementById('paymentProcessingType').textContent = user.isTypeB ? "Drone Processing (Type B)" : "Center Processing (Type A)";
+                        const price = user.isTypeB ? await contract.methods.P2().call() : await contract.methods.P1().call();
+                        document.getElementById('paymentPrice').textContent = `${price} wei`;
+                        const totalPayment = price * user.Q;
+                        document.getElementById('totalPaymentRequired').textContent = `${totalPayment} wei`;
+                    }
+                } else if (parseInt(await contract.methods.roundNumber().call()) > 0) {
+                    // Game is active but not converged
+                    document.getElementById('paymentComplete').classList.add('d-none');
+                    document.getElementById('makePaymentForm').classList.add('d-none');
+                    
+                    // Check if user has already submitted Q for this round
+                    if (user.hasSubmitted) {
+                        document.getElementById('submitQForm').classList.remove('d-none');
+                        document.getElementById('submitQBtn').disabled = true;
+                        document.getElementById('submitQBtn').textContent = "Q Submitted for This Round";
+                    } else {
+                        document.getElementById('submitQForm').classList.remove('d-none');
+                        document.getElementById('submitQBtn').disabled = false;
+                        document.getElementById('submitQBtn').textContent = "Submit Optimal Q";
+                    }
+                    
+                    // Calculate and display optimal Q
+                    await updateUserOptimalQ(user);
+                } else {
+                    // Game not started yet
+                    document.getElementById('submitQForm').classList.add('d-none');
+                    document.getElementById('makePaymentForm').classList.add('d-none');
+                    document.getElementById('paymentComplete').classList.add('d-none');
+                    showAlert("Waiting for the admin to start the game.", "info");
+                }
+                
+            } else {
+                // User is not registered
+                document.getElementById('registerForm').classList.remove('d-none');
+                document.getElementById('submitQForm').classList.add('d-none');
+                document.getElementById('makePaymentForm').classList.add('d-none');
+                document.getElementById('paymentComplete').classList.add('d-none');
+                document.getElementById('userType').classList.add('d-none');
+                
+                // Check if the game is active
+                const roundNumber = await contract.methods.roundNumber().call();
+                if (parseInt(roundNumber) > 0) {
+                    document.getElementById('registerForm').classList.add('d-none');
+                    showAlert("Game has already started. You cannot register now.", "warning");
+                }
+            }
+        }
+        
+        // Calculate and Update User's Optimal Q
+        async function updateUserOptimalQ(user) {
+            try {
+                // Get user parameters
+                const D1 = user.D1;
+                const isTypeB = user.isTypeB;
+                
+                // Get game constants
+                const A = await contract.methods.A().call();
+                const LAMBDA = await contract.methods.LAMBDA().call();
+                const D2_CENTER = await contract.methods.D2_CENTER().call();
+                const D2_DRONE = await contract.methods.D2_DRONE().call();
+                const K = await contract.methods.K().call();
+                const B = await contract.methods.B().call();
+                
+                // Get current prices
+                const P1 = await contract.methods.P1().call();
+                const P2 = await contract.methods.P2().call();
+                
+                // Calculate optimal Q
+                const D = isTypeB ? (D2_DRONE - D1) : (D2_CENTER - D1);
+                const currentP = isTypeB ? P2 : P1;
+                let numerator = (A * LAMBDA * D) - currentP;
+                if (isTypeB) {
+                    numerator = parseInt(numerator) + parseInt(B);
+                }
+                
+                let optimalQ = 0;
+                if (numerator > 0) {
+                    optimalQ = Math.floor(numerator / (2 * K));
+                }
+                
+                // Update display
+                document.getElementById('calculatedQValue').textContent = optimalQ;
+                document.getElementById('userProcessingType').textContent = isTypeB ? "Drone Processing (Type B)" : "Center Processing (Type A)";
+                document.getElementById('userCurrentPrice').textContent = `${currentP} wei`;
+                
+                // Update user utility
+                const utility = await contract.methods.getUserUtility(userAccount).call();
+                document.getElementById('userUtility').textContent = utility;
+                
+            } catch (error) {
+                console.error("Error calculating optimal Q:", error);
+                showAlert("Error calculating optimal Q: " + error.message, "danger");
+            }
+        }
+        
+        // Update Game State
+        async function updateGameState() {
+            try {
+                // Get basic game stats
+                const roundNumber = await contract.methods.roundNumber().call();
+                const P1 = await contract.methods.P1().call();
+                const P2 = await contract.methods.P2().call();
+                const isConverged = await contract.methods.isConverged().call();
+                const dronesActivated = await contract.methods.dronesActivated().call();
+                const totalQ1 = await contract.methods.totalQ1().call();
+                const totalQ2 = await contract.methods.totalQ2().call();
+                
+                // Update display
+                document.getElementById('roundNumber').textContent = roundNumber;
+                document.getElementById('centerPrice').textContent = P1;
+                document.getElementById('dronePrice').textContent = P2;
+                document.getElementById('convergedStatus').textContent = isConverged ? "Yes" : "No";
+                document.getElementById('dronesStatus').textContent = dronesActivated ? "Yes" : "No";
+                
+                // Update capacity usage
+                const centerCapacity = await contract.methods.CENTER_CAPACITY().call();
+                const droneCapacity = await contract.methods.DRONE_CAPACITY().call();
+                document.getElementById('centerUsage').textContent = totalQ1;
+                document.getElementById('droneUsage').textContent = totalQ2;
+                
+                // Update progress bars
+                const centerPercentage = (totalQ1 / centerCapacity) * 100;
+                const dronePercentage = (totalQ2 / droneCapacity) * 100;
+                document.getElementById('centerProgressBar').style.width = `${Math.min(centerPercentage, 100)}%`;
+                document.getElementById('droneProgressBar').style.width = `${Math.min(dronePercentage, 100)}%`;
+                
+                // Color the progress bars based on capacity
+                const centerBar = document.getElementById('centerProgressBar');
+                const droneBar = document.getElementById('droneProgressBar');
+                
+                centerBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                droneBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                
+                if (centerPercentage < 75) {
+                    centerBar.classList.add('bg-success');
+                } else if (centerPercentage < 90) {
+                    centerBar.classList.add('bg-warning');
+                } else {
+                    centerBar.classList.add('bg-danger');
+                }
+                
+                if (dronePercentage < 75) {
+                    droneBar.classList.add('bg-success');
+                } else if (dronePercentage < 90) {
+                    droneBar.classList.add('bg-warning');
+                } else {
+                    droneBar.classList.add('bg-danger');
+                }
+                
+                // Add price to history if it's a new round
+                if (priceHistory.rounds.length === 0 || 
+                    parseInt(roundNumber) > parseInt(priceHistory.rounds[priceHistory.rounds.length - 1])) {
+                    
+                    if (parseInt(roundNumber) > 0) {
+                        priceHistory.rounds.push(roundNumber);
+                        priceHistory.p1.push(P1);
+                        priceHistory.p2.push(P2);
+                        updatePriceChart();
+                    }
+                }
+                
+                // Get utility values
+                if (parseInt(roundNumber) > 0) {
+                    const centerUtility = await contract.methods.getCenterUtility().call();
+                    const droneUtility = await contract.methods.getDroneUtility().call();
+                    document.getElementById('centerUtility').textContent = centerUtility;
+                    document.getElementById('droneUtility').textContent = droneUtility;
+                    
+                    // Calculate total user utility
+                    let totalUserUtility = 0;
+                    let i = 0;
+                    let userExists = true;
+                    
+                    while (userExists) {
+                        try {
+                            const user = await contract.methods.users(i).call();
+                            const userUtility = await contract.methods.getUserUtility(user.userAddress).call();
+                            totalUserUtility = parseInt(totalUserUtility) + parseInt(userUtility);
+                            i++;
+                        } catch (error) {
+                            userExists = false;
+                        }
+                    }
+                    
+                    document.getElementById('totalUserUtility').textContent = totalUserUtility;
+                }
+                
+                // Update players list
+                await updatePlayersList();
+                
+                // Update user interface if needed
+                if (userRegistered) {
+                    await updateUserInterface();
+                }
+                
+            } catch (error) {
+                console.error("Error updating game state:", error);
+                showAlert("Error updating game state: " + error.message, "danger");
+            }
+        }
+        
+        // Update Players List
+        async function updatePlayersList() {
+            try {
+                const playersList = document.getElementById('playersList');
+                const noPlayersMessage = document.getElementById('noPlayersMessage');
+                
+                // Clear the list
+                playersList.innerHTML = '';
+                
+                let i = 0;
+                let userExists = true;
+                let players = [];
+                
+                // Get all players
+                while (userExists) {
+                    try {
+                        const user = await contract.methods.users(i).call();
+                        players.push({
+                            index: i,
+                            address: user.userAddress,
+                            D1: user.D1,
+                            Q: user.Q,
+                            isTypeB: user.isTypeB,
+                            hasSubmitted: user.hasSubmitted,
+                            hasPaid: user.hasPaid
+                        });
+                        i++;
+                    } catch (error) {
+                        userExists = false;
+                    }
+                }
+                
+                // Display players
+                if (players.length > 0) {
+                    noPlayersMessage.classList.add('d-none');
+                    playersList.classList.remove('d-none');
+                    
+                    players.forEach(player => {
+                        const isCurrentUser = player.address.toLowerCase() === (userAccount ? userAccount.toLowerCase() : '');
+                        const playerElement = document.createElement('div');
+                        playerElement.className = `user-pill ${isCurrentUser ? 'border border-primary' : ''}`;
+                        
+                        let statusBadge = '';
+                        if (player.hasPaid) {
+                            statusBadge = '<span class="badge bg-success">Paid</span>';
+                        } else if (player.hasSubmitted) {
+                            statusBadge = '<span class="badge bg-info">Submitted</span>';
+                        } else {
+                            statusBadge = '<span class="badge bg-warning">Pending</span>';
+                        }
+                        
+                        const typeBadge = player.isTypeB ? 
+                            '<span class="badge type-b-badge ms-1">Type B</span>' :
+                            '<span class="badge type-a-badge ms-1">Type A</span>';
+                        
+                        playerElement.innerHTML = `
+                            <div>
+                                <small>${shortenAddress(player.address)}</small>
+                                ${isCurrentUser ? ' <span class="badge bg-secondary">You</span>' : ''}
+                                ${typeBadge}
+                            </div>
+                            <div>
+                                <small>Q: ${player.Q}</small> ${statusBadge}
+                            </div>
+                        `;
+                        
+                        playersList.appendChild(playerElement);
+                    });
+                    
+                } else {
+                    noPlayersMessage.classList.remove('d-none');
+                    playersList.classList.add('d-none');
+                }
+                
+            } catch (error) {
+                console.error("Error updating players list:", error);
+                showAlert("Error updating players list: " + error.message, "danger");
+            }
+        }
+
+        // Update Network Info
+        async function updateNetworkInfo() {
+            try {
+                const networkId = await web3.eth.net.getId();
+                const networkNames = {
+                    1: "Ethereum Mainnet",
+                    3: "Ropsten Testnet",
+                    4: "Rinkeby Testnet",
+                    5: "Goerli Testnet",
+                    42: "Kovan Testnet",
+                    56: "BSC Mainnet",
+                    97: "BSC Testnet",
+                    137: "Polygon Mainnet",
+                    80001: "Mumbai Testnet",
+                    1337: "Local Network",
+                    31337: "Hardhat Network"
+                };
+                
+                const networkName = networkNames[networkId] || `Network ${networkId}`;
+                document.getElementById('networkBadge').textContent = networkName;
+                document.getElementById('networkBadge').classList.remove('bg-secondary');
+                document.getElementById('networkBadge').classList.add('bg-success');
+                
+            } catch (error) {
+                console.error("Error updating network info:", error);
+            }
+        }
+        
+        // Update Account Display
+        function updateAccountDisplay() {
+            if (userAccount) {
+                document.getElementById('connectWalletBtn').classList.add('d-none');
+                document.getElementById('accountInfo').classList.remove('d-none');
+                document.getElementById('accountAddress').textContent = shortenAddress(userAccount);
+            } else {
+                document.getElementById('connectWalletBtn').classList.remove('d-none');
+                document.getElementById('accountInfo').classList.add('d-none');
+            }
+        }
+        
+        // Handle Account Change
+        async function handleAccountsChanged(accounts) {
+            if (accounts.length === 0) {
+                userAccount = null;
+                isAdmin = false;
+                userRegistered = false;
+                updateAccountDisplay();
+                document.getElementById('adminPanel').classList.add('d-none');
+                showAlert("Disconnected from wallet", "warning");
+            } else if (accounts[0] !== userAccount) {
+                await connectAccount(accounts[0]);
+                showAlert("Account changed", "info");
+            }
+        }
+        
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Connect wallet button
+            document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
+            
+            // User registration form
+            document.getElementById('userRegistrationForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const dataQuality = document.getElementById('dataQuality').value;
+                await registerUser(dataQuality);
+            });
+            
+            // Submit Q button
+            document.getElementById('submitQBtn').addEventListener('click', submitQ);
+            
+            // Make payment button
+            document.getElementById('makePaymentBtn').addEventListener('click', makePayment);
+            
+            // Admin buttons
+            document.getElementById('startGameBtn').addEventListener('click', startGame);
+            document.getElementById('endRoundBtn').addEventListener('click', endRound);
+            document.getElementById('distributeFundsBtn').addEventListener('click', distributeFunds);
+            document.getElementById('checkFundsBtn').addEventListener('click', checkFundsDistribution);
+        }
+        
+        // Contract Interaction Functions
+        async function registerUser(dataQuality) {
+            try {
+                showLoading("Registering user...");
+                
+                await contract.methods.registerUser(dataQuality).send({ from: userAccount });
+                
+                showAlert("User registered successfully!", "success");
+                await checkUserStatus();
+                await updateGameState();
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error("Error registering user:", error);
+                showAlert("Error registering user: " + error.message, "danger");
+            }
+        }
+        
+        async function submitQ() {
+            try {
+                showLoading("Submitting Q value...");
+                
+                await contract.methods.submitQ().send({ from: userAccount });
+                
+                showAlert("Q value submitted successfully!", "success");
+                await updateGameState();
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error("Error submitting Q:", error);
+                showAlert("Error submitting Q: " + error.message, "danger");
+            }
+        }
+        
+        async function makePayment() {
+            try {
+                showLoading("Processing payment...");
+                
+                // Get required payment amount
+                const paymentAmount = await contract.methods.getRequiredPayment(userAccount).call();
+                
+                await contract.methods.makePayment().send({ 
+                    from: userAccount, 
+                    value: paymentAmount
+                });
+                
+                showAlert("Payment made successfully!", "success");
+                await updateGameState();
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error("Error making payment:", error);
+                showAlert("Error making payment: " + error.message, "danger");
+            }
+        }
+        
+        async function startGame() {
+            try {
+                if (!isAdmin) {
+                    showAlert("Only admin can start the game", "warning");
+                    return;
+                }
+                
+                showLoading("Starting game...");
+                
+                await contract.methods.startGame().send({ from: userAccount });
+                
+                showAlert("Game started successfully!", "success");
+                await updateGameState();
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error("Error starting game:", error);
+                showAlert("Error starting game: " + error.message, "danger");
+            }
+        }
+        
+        async function endRound() {
+            try {
+                if (!isAdmin) {
+                    showAlert("Only admin can end the round", "warning");
+                    return;
+                }
+                
+                showLoading("Ending round...");
+                
+                await contract.methods.endRound().send({ from: userAccount });
+                
+                showAlert("Round ended successfully!", "success");
+                await updateGameState();
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error("Error ending round:", error);
+                showAlert("Error ending round: " + error.message, "danger");
+            }
+        }
+        
+        async function distributeFunds() {
+            try {
+                if (!isAdmin) {
+                    showAlert("Only admin can distribute funds", "warning");
+                    return;
+                }
+                
+                showLoading("Distributing funds...");
+                
+                await contract.methods.distributeFunds().send({ from: userAccount });
+                
+                showAlert("Funds distributed successfully!", "success");
+                await updateGameState();
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error("Error distributing funds:", error);
+                showAlert("Error distributing funds: " + error.message, "danger");
+            }
+        }
+        
+        async function checkFundsDistribution() {
+            try {
+                const debugInfo = await contract.methods.debugFundDistribution().call();
+                
+                document.getElementById('debugContractBalance').textContent = debugInfo.contractBalance + " wei";
+                document.getElementById('debugRequiredFunds').textContent = debugInfo.totalRequired + " wei";
+                document.getElementById('debugCenterRevenue').textContent = debugInfo.centerRevenue + " wei";
+                document.getElementById('debugDroneRevenue').textContent = debugInfo.droneRevenue + " wei";
+                document.getElementById('debugCompensationOwed').textContent = debugInfo.compensationOwed + " wei";
+                
+                document.getElementById('fundDebugInfo').classList.remove('d-none');
+            } catch (error) {
+                console.error("Error checking fund distribution:", error);
+                showAlert("Error checking fund distribution: " + error.message, "danger");
+            }
+        }
+        
+        // Helper Functions
+        function shortenAddress(address) {
+            return address.substring(0, 6) + "..." + address.substring(address.length - 4);
+        }
+        
+        function showAlert(message, type) {
+            const alertId = "alert-" + Date.now();
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show flash-message" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            
+            document.getElementById('flashMessages').insertAdjacentHTML('beforeend', alertHtml);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(() => {
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    alertElement.classList.remove('show');
+                    setTimeout(() => alertElement.remove(), 500);
+                }
+            }, 5000);
+        }
+        
+        function showLoading(message = "Processing...") {
+            document.getElementById('loadingMessage').textContent = message;
+            document.getElementById('loadingOverlay').style.visibility = "visible";
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.visibility = "hidden";
+        }
+
+        // Initialize the application when the DOM is ready
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
