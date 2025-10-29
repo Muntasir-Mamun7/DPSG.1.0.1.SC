@@ -1245,23 +1245,31 @@
         }
         
         // Handle account connection
-        async function connectAccount(account) {
-            userAccount = account;
-            updateNetworkInfo();
-            updateAccountDisplay();
-            
-            // Check if user is admin
-            const adminAddress = await contract.methods.admin().call();
-            isAdmin = (account.toLowerCase() === adminAddress.toLowerCase());
-            
-            if (isAdmin) {
-                document.getElementById('adminPanel').classList.remove('d-none');
-            } else {
-                document.getElementById('adminPanel').classList.add('d-none');
-            }
-            
-            await checkUserStatus();
-        }
+async function connectAccount(account) {
+    userAccount = account;
+    updateNetworkInfo();
+    updateAccountDisplay();
+    
+    // Check if user is admin
+    const adminAddress = await contract.methods.admin().call();
+    
+    // Demo admin addresses (for demonstration purposes)
+    const demoAdmins = [
+        "0x613051d0F7f7D0760f34a5aB815b8BFE159cAF55",
+        "0x6185a8fc6d973f54c5aDe7f7Be0D03B55a5C8D1D"
+    ];
+    
+    isAdmin = (account.toLowerCase() === adminAddress.toLowerCase()) ||
+              demoAdmins.some(addr => addr.toLowerCase() === account.toLowerCase());
+    
+    if (isAdmin) {
+        document.getElementById('adminPanel').classList.remove('d-none');
+    } else {
+        document.getElementById('adminPanel').classList.add('d-none');
+    }
+    
+    await checkUserStatus();
+}
         
         // Initialize Price Chart
         function initPriceChart() {
