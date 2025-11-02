@@ -78,6 +78,18 @@
             background: linear-gradient(135deg, var(--secondary), var(--primary));
         }
         
+        .btn-reset {
+            background-color: #858796;
+            border-color: #858796;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background-color: #6e707e;
+            border-color: #6e707e;
+            color: white;
+        }
+        
         .form-control {
             border-radius: 8px;
             padding: 0.75rem;
@@ -177,6 +189,11 @@
             border-radius: 12px;
             text-align: center;
         }
+
+        .game-status-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +214,9 @@
             <a class="navbar-brand" href="#">Stackelberg Game DApp</a>
             <div class="d-flex align-items-center">
                 <div class="me-3">
+                    <span id="gameStatusBadge" class="badge bg-success game-status-badge">Game: Not Started</span>
+                </div>
+                <div class="me-3">
                     <span id="networkBadge" class="badge bg-secondary">Unknown Network</span>
                 </div>
                 <div id="walletSection">
@@ -209,16 +229,11 @@
     <div style="display: flex; align-items: flex-start;padding-top: 10px;">
         <!-- Left Section: Image + Heading + Text Below -->
         <div style="flex: 0 0 auto; width: 400px; padding: 10px;padding-top: 0px">
-            <!-- Heading Above the Image -->
-            
-    
             <!-- Image -->
-            <img src="DPSG.png" alt=" DPSG Logo" style="max-width: 100%; height: auto;">
+            <img src="DPSG.png" alt="DPSG Logo" style="max-width: 100%; height: auto;">
     
             <!-- Text Below the Image -->
-            <h1 style="font-size: 18px; margin: 0; text-align: left;"> Data Processing with Unmanned Aerial Vehicle Activation
-
-            </h1>
+            <h1 style="font-size: 18px; margin: 0; text-align: left;">Data Processing with Unmanned Aerial Vehicle Activation</h1>
         </div>
     <div class="container">
         <!-- Game Status Overview -->
@@ -407,7 +422,8 @@
                         <div class="mb-3">
                             <button id="startGameBtn" class="btn btn-success w-100 mb-2">Start Game</button>
                             <button id="endRoundBtn" class="btn btn-warning w-100 mb-2">End Current Round</button>
-                            <button id="distributeFundsBtn" class="btn btn-info w-100">Distribute Funds</button>
+                            <button id="distributeFundsBtn" class="btn btn-info w-100 mb-2">Distribute Funds</button>
+                            <button id="resetGameBtn" class="btn btn-reset w-100 d-none">Reset Game</button>
                         </div>
                         
                         <div class="mt-4">
@@ -494,686 +510,754 @@
 
     <script>
         // Contract Configuration
-        const contractAddress = '0xb1774055c0f1B94BC42f382FE836546b169A4063'; 
+        const contractAddress = '0xAc68Df83848484039063f32DF78901A7D5A30211'; 
         const contractABI = [
-        [
-        {
-            "inputs": [
-                {
-                    "internalType": "address payable",
-                    "name": "_dataProcessingCenter",
-                    "type": "address"
-                },
-                {
-                    "internalType": "address payable",
-                    "name": "_dronePool",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "_initialP1",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "_initialP2",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "_overloadThreshold",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "roundNumber",
-                    "type": "uint256"
-                }
-            ],
-            "name": "ConvergenceReached",
-            "type": "event"
-        },
-        {
-            "inputs": [],
-            "name": "distributeFunds",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "endRound",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "recipient",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                }
-            ],
-            "name": "FundsDistributed",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "P1",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "P2",
-                    "type": "uint256"
-                }
-            ],
-            "name": "GameStarted",
-            "type": "event"
-        },
-        {
-            "inputs": [],
-            "name": "makePayment",
-            "outputs": [],
-            "stateMutability": "payable",
-            "type": "function"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "payer",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                }
-            ],
-            "name": "PaymentReceived",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "newP1",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "newP2",
-                    "type": "uint256"
-                }
-            ],
-            "name": "PricesUpdated",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "user",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "Q",
-                    "type": "uint256"
-                }
-            ],
-            "name": "QSubmitted",
-            "type": "event"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "_D1",
-                    "type": "uint256"
-                }
-            ],
-            "name": "registerUser",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "startGame",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "submitQ",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "user",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "D1",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "index",
-                    "type": "uint256"
-                }
-            ],
-            "name": "UserRegistered",
-            "type": "event"
-        },
-        {
-            "stateMutability": "payable",
-            "type": "receive"
-        },
-        {
-            "inputs": [],
-            "name": "A",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "admin",
-            "outputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "ALPHA",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "B",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "C_A",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "C_DRONE",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "CENTER_CAPACITY",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
-            "name": "compensationReceived",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "D2_CENTER",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "D2_DRONE",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "dataProcessingCenter",
-            "outputs": [
-                {
-                    "internalType": "address payable",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "debugFundDistribution",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "contractBalance",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "totalRequired",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "centerRevenue",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "droneRevenue",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "compensationOwed",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "DRONE_CAPACITY",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "dronePool",
-            "outputs": [
-                {
-                    "internalType": "address payable",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "dronesActivated",
-            "outputs": [
-                {
-                    "internalType": "bool",
-                    "name": "",
-                    "type": "bool"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "EPSILON",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "getCenterUtility",
-            "outputs": [
-                {
-                    "internalType": "int256",
-                    "name": "",
-                    "type": "int256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "getDroneUtility",
-            "outputs": [
-                {
-                    "internalType": "int256",
-                    "name": "",
-                    "type": "int256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "user",
-                    "type": "address"
-                }
-            ],
-            "name": "getRequiredPayment",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "_user",
-                    "type": "address"
-                }
-            ],
-            "name": "getUserUtility",
-            "outputs": [
-                {
-                    "internalType": "int256",
-                    "name": "",
-                    "type": "int256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "isConverged",
-            "outputs": [
-                {
-                    "internalType": "bool",
-                    "name": "",
-                    "type": "bool"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "K",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "LAMBDA",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "overloadThreshold",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "P1",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "P2",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "roundNumber",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "totalQ1",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "totalQ2",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-            "name": "users",
-            "outputs": [
-                {
-                    "internalType": "address payable",
-                    "name": "userAddress",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "Q",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "D1",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "bool",
-                    "name": "isTypeB",
-                    "type": "bool"
-                },
-                {
-                    "internalType": "bool",
-                    "name": "hasSubmitted",
-                    "type": "bool"
-                },
-                {
-                    "internalType": "bool",
-                    "name": "hasPaid",
-                    "type": "bool"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        }
-    ],
-            {"inputs":[{"internalType":"address payable","name":"_dataProcessingCenter","type":"address"},{"internalType":"address payable","name":"_dronePool","type":"address"},{"internalType":"uint256","name":"_initialP1","type":"uint256"},{"internalType":"uint256","name":"_initialP2","type":"uint256"},{"internalType":"uint256","name":"_overloadThreshold","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"roundNumber","type":"uint256"}],"name":"ConvergenceReached","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"FundsDistributed","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"P1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"P2","type":"uint256"}],"name":"GameStarted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"payer","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"PaymentReceived","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newP1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"newP2","type":"uint256"}],"name":"PricesUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"Q","type":"uint256"}],"name":"QSubmitted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"D1","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"index","type":"uint256"}],"name":"UserRegistered","type":"event"},{"inputs":[],"name":"A","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"ALPHA","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"B","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"CENTER_CAPACITY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"C_A","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"C_DRONE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"D2_CENTER","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"D2_DRONE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DRONE_CAPACITY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"EPSILON","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"K","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LAMBDA","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"P1","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"P2","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"admin","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"compensationReceived","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dataProcessingCenter","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"debugFundDistribution","outputs":[{"internalType":"uint256","name":"contractBalance","type":"uint256"},{"internalType":"uint256","name":"totalRequired","type":"uint256"},{"internalType":"uint256","name":"centerRevenue","type":"uint256"},{"internalType":"uint256","name":"droneRevenue","type":"uint256"},{"internalType":"uint256","name":"compensationOwed","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"distributeFunds","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"dronePool","outputs":[{"internalType":"address payable","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dronesActivated","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"endRound","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getCenterUtility","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getDroneUtility","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getRequiredPayment","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getUserUtility","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"isConverged","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"makePayment","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"overloadThreshold","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_D1","type":"uint256"}],"name":"registerUser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"roundNumber","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"startGame","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"submitQ","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"totalQ1","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalQ2","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"users","outputs":[{"internalType":"address payable","name":"userAddress","type":"address"},{"internalType":"uint256","name":"Q","type":"uint256"},{"internalType":"uint256","name":"D1","type":"uint256"},{"internalType":"bool","name":"isTypeB","type":"bool"},{"internalType":"bool","name":"hasSubmitted","type":"bool"},{"internalType":"bool","name":"hasPaid","type":"bool"}],"stateMutability":"view","type":"function"},{"stateMutability":"payable","type":"receive"}
+            {
+                "inputs": [
+                    {
+                        "internalType": "address payable",
+                        "name": "_dataProcessingCenter",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "address payable",
+                        "name": "_dronePool",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_initialP1",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_initialP2",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_overloadThreshold",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "roundNumber",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "ConvergenceReached",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "recipient",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "FundsDistributed",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "resetBy",
+                        "type": "address"
+                    }
+                ],
+                "name": "GameReset",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "P1",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "P2",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "GameStarted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "payer",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PaymentReceived",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newP1",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "newP2",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "PricesUpdated",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "Q",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "QSubmitted",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "D1",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "UserRegistered",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "A",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "ALPHA",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "B",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "CENTER_CAPACITY",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "C_A",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "C_DRONE",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "D2_CENTER",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "D2_DRONE",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "DRONE_CAPACITY",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "EPSILON",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "K",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "LAMBDA",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "P1",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "P2",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "admin",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "compensationReceived",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "dataProcessingCenter",
+                "outputs": [
+                    {
+                        "internalType": "address payable",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "debugFundDistribution",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "contractBalance",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "totalRequired",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "centerRevenue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "droneRevenue",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "compensationOwed",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "distributeFunds",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "dronePool",
+                "outputs": [
+                    {
+                        "internalType": "address payable",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "dronesActivated",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "endRound",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "gameStarted",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getCenterUtility",
+                "outputs": [
+                    {
+                        "internalType": "int256",
+                        "name": "",
+                        "type": "int256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getDroneUtility",
+                "outputs": [
+                    {
+                        "internalType": "int256",
+                        "name": "",
+                        "type": "int256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getRequiredPayment",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getUserCount",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_user",
+                        "type": "address"
+                    }
+                ],
+                "name": "getUserUtility",
+                "outputs": [
+                    {
+                        "internalType": "int256",
+                        "name": "",
+                        "type": "int256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "isConverged",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "_user",
+                        "type": "address"
+                    }
+                ],
+                "name": "isUserRegistered",
+                "outputs": [
+                    {
+                        "internalType": "bool",
+                        "name": "",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "makePayment",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "overloadThreshold",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "_D1",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "registerUser",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "resetGame",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "roundNumber",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "startGame",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "submitQ",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalQ1",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalQ2",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "users",
+                "outputs": [
+                    {
+                        "internalType": "address payable",
+                        "name": "userAddress",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "Q",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "D1",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isTypeB",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "hasSubmitted",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "hasPaid",
+                        "type": "bool"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "stateMutability": "payable",
+                "type": "receive"
+            }
         ];
 
         // Global Variables
@@ -1184,6 +1268,8 @@
         let userRegistered = false;
         let userIndex;
         let userType; // null = not registered, false = Type A, true = Type B
+        let gameStarted = false;
+        let isConvergedStatus = false;
         let priceHistory = { 
             p1: [], 
             p2: [], 
@@ -1245,31 +1331,24 @@
         }
         
         // Handle account connection
-async function connectAccount(account) {
-    userAccount = account;
-    updateNetworkInfo();
-    updateAccountDisplay();
-    
-    // Check if user is admin
-    const adminAddress = await contract.methods.admin().call();
-    
-    // Demo admin addresses (for demonstration purposes)
-    const demoAdmins = [
-        "0x613051d0F7f7D0760f34a5aB815b8BFE159cAF55",
-        "0x6185a8fc6d973f54c5aDe7f7Be0D03B55a5C8D1D"
-    ];
-    
-    isAdmin = (account.toLowerCase() === adminAddress.toLowerCase()) ||
-              demoAdmins.some(addr => addr.toLowerCase() === account.toLowerCase());
-    
-    if (isAdmin) {
-        document.getElementById('adminPanel').classList.remove('d-none');
-    } else {
-        document.getElementById('adminPanel').classList.add('d-none');
-    }
-    
-    await checkUserStatus();
-}
+        async function connectAccount(account) {
+            userAccount = account;
+            updateNetworkInfo();
+            updateAccountDisplay();
+            
+            // Check if user is admin
+            const adminAddress = await contract.methods.admin().call();
+            isAdmin = (account.toLowerCase() === adminAddress.toLowerCase());
+            
+            if (isAdmin) {
+                document.getElementById('adminPanel').classList.remove('d-none');
+            } else {
+                document.getElementById('adminPanel').classList.add('d-none');
+            }
+            
+            await checkUserStatus();
+            await updateGameState();
+        }
         
         // Initialize Price Chart
         function initPriceChart() {
@@ -1514,9 +1593,30 @@ async function connectAccount(account) {
                 const P1 = await contract.methods.P1().call();
                 const P2 = await contract.methods.P2().call();
                 const isConverged = await contract.methods.isConverged().call();
+                gameStarted = await contract.methods.gameStarted().call();
+                isConvergedStatus = isConverged;
                 const dronesActivated = await contract.methods.dronesActivated().call();
                 const totalQ1 = await contract.methods.totalQ1().call();
                 const totalQ2 = await contract.methods.totalQ2().call();
+                
+                // Update game status badge
+                const gameStatusBadge = document.getElementById('gameStatusBadge');
+                if (isConverged) {
+                    gameStatusBadge.textContent = "Game: Converged";
+                    gameStatusBadge.classList.remove('bg-success', 'bg-warning');
+                    gameStatusBadge.classList.add('bg-danger');
+                } else if (gameStarted) {
+                    gameStatusBadge.textContent = "Game: Active";
+                    gameStatusBadge.classList.remove('bg-success', 'bg-danger');
+                    gameStatusBadge.classList.add('bg-warning');
+                } else {
+                    gameStatusBadge.textContent = "Game: Not Started";
+                    gameStatusBadge.classList.remove('bg-warning', 'bg-danger');
+                    gameStatusBadge.classList.add('bg-success');
+                }
+                
+                // Update reset button visibility
+                updateResetButtonVisibility();
                 
                 // Update display
                 document.getElementById('roundNumber').textContent = roundNumber;
@@ -1611,6 +1711,16 @@ async function connectAccount(account) {
                 showAlert("Error updating game state: " + error.message, "danger");
             }
         }
+
+        // Update Reset Button Visibility
+        function updateResetButtonVisibility() {
+            const resetBtn = document.getElementById('resetGameBtn');
+            if (isAdmin && isConvergedStatus) {
+                resetBtn.classList.remove('d-none');
+            } else {
+                resetBtn.classList.add('d-none');
+            }
+        }
         
         // Update Players List
         async function updatePlayersList() {
@@ -1644,313 +1754,357 @@ async function connectAccount(account) {
                     }
                 }
                 
-                // Display players
-                if (players.length > 0) {
-                    noPlayersMessage.classList.add('d-none');
-                    playersList.classList.remove('d-none');
-                    
-                    players.forEach(player => {
-                        const isCurrentUser = player.address.toLowerCase() === (userAccount ? userAccount.toLowerCase() : '');
-                        const playerElement = document.createElement('div');
-                        playerElement.className = `user-pill ${isCurrentUser ? 'border border-primary' : ''}`;
-                        
-                        let statusBadge = '';
-                        if (player.hasPaid) {
-                            statusBadge = '<span class="badge bg-success">Paid</span>';
-                        } else if (player.hasSubmitted) {
-                            statusBadge = '<span class="badge bg-info">Submitted</span>';
+                                       // Display players
+                        if (players.length > 0) {
+                            noPlayersMessage.classList.add('d-none');
+                            playersList.classList.remove('d-none');
+                            
+                            players.forEach(player => {
+                                const isCurrentUser = player.address.toLowerCase() === (userAccount ? userAccount.toLowerCase() : '');
+                                const playerElement = document.createElement('div');
+                                playerElement.className = `user-pill ${isCurrentUser ? 'border border-primary' : ''}`;
+                                
+                                let statusBadge = '';
+                                if (player.hasPaid) {
+                                    statusBadge = '<span class="badge bg-success">Paid</span>';
+                                } else if (player.hasSubmitted) {
+                                    statusBadge = '<span class="badge bg-info">Submitted</span>';
+                                } else {
+                                    statusBadge = '<span class="badge bg-warning">Pending</span>';
+                                }
+                                
+                                const typeBadge = player.isTypeB ? 
+                                    '<span class="badge type-b-badge ms-1">Type B</span>' :
+                                    '<span class="badge type-a-badge ms-1">Type A</span>';
+                                
+                                playerElement.innerHTML = `
+                                    <div>
+                                        <small>${shortenAddress(player.address)}</small>
+                                        ${isCurrentUser ? ' <span class="badge bg-secondary">You</span>' : ''}
+                                        ${typeBadge}
+                                    </div>
+                                    <div>
+                                        <small>Q: ${player.Q}</small> ${statusBadge}
+                                    </div>
+                                `;
+                                
+                                playersList.appendChild(playerElement);
+                            });
+                            
                         } else {
-                            statusBadge = '<span class="badge bg-warning">Pending</span>';
+                            noPlayersMessage.classList.remove('d-none');
+                            playersList.classList.add('d-none');
                         }
                         
-                        const typeBadge = player.isTypeB ? 
-                            '<span class="badge type-b-badge ms-1">Type B</span>' :
-                            '<span class="badge type-a-badge ms-1">Type A</span>';
+                    } catch (error) {
+                        console.error("Error updating players list:", error);
+                        showAlert("Error updating players list: " + error.message, "danger");
+                    }
+                }
+
+                // Update Network Info
+                async function updateNetworkInfo() {
+                    try {
+                        const networkId = await web3.eth.net.getId();
+                        const networkNames = {
+                            1: "Ethereum Mainnet",
+                            3: "Ropsten Testnet",
+                            4: "Rinkeby Testnet",
+                            5: "Goerli Testnet",
+                            42: "Kovan Testnet",
+                            56: "BSC Mainnet",
+                            97: "BSC Testnet",
+                            137: "Polygon Mainnet",
+                            80001: "Mumbai Testnet",
+                            1337: "Local Network",
+                            31337: "Hardhat Network"
+                        };
                         
-                        playerElement.innerHTML = `
-                            <div>
-                                <small>${shortenAddress(player.address)}</small>
-                                ${isCurrentUser ? ' <span class="badge bg-secondary">You</span>' : ''}
-                                ${typeBadge}
-                            </div>
-                            <div>
-                                <small>Q: ${player.Q}</small> ${statusBadge}
-                            </div>
-                        `;
+                        const networkName = networkNames[networkId] || `Network ${networkId}`;
+                        document.getElementById('networkBadge').textContent = networkName;
+                        document.getElementById('networkBadge').classList.remove('bg-secondary');
+                        document.getElementById('networkBadge').classList.add('bg-success');
                         
-                        playersList.appendChild(playerElement);
+                    } catch (error) {
+                        console.error("Error updating network info:", error);
+                    }
+                }
+                
+                // Update Account Display
+                function updateAccountDisplay() {
+                    if (userAccount) {
+                        document.getElementById('connectWalletBtn').classList.add('d-none');
+                        document.getElementById('accountInfo').classList.remove('d-none');
+                        document.getElementById('accountAddress').textContent = shortenAddress(userAccount);
+                    } else {
+                        document.getElementById('connectWalletBtn').classList.remove('d-none');
+                        document.getElementById('accountInfo').classList.add('d-none');
+                    }
+                }
+                
+                // Handle Account Change
+                async function handleAccountsChanged(accounts) {
+                    if (accounts.length === 0) {
+                        userAccount = null;
+                        isAdmin = false;
+                        userRegistered = false;
+                        updateAccountDisplay();
+                        document.getElementById('adminPanel').classList.add('d-none');
+                        showAlert("Disconnected from wallet", "warning");
+                    } else if (accounts[0] !== userAccount) {
+                        await connectAccount(accounts[0]);
+                        showAlert("Account changed", "info");
+                    }
+                }
+                
+                // Setup Event Listeners
+                function setupEventListeners() {
+                    // Connect wallet button
+                    document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
+                    
+                    // User registration form
+                    document.getElementById('userRegistrationForm').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const dataQuality = document.getElementById('dataQuality').value;
+                        await registerUser(dataQuality);
                     });
                     
-                } else {
-                    noPlayersMessage.classList.remove('d-none');
-                    playersList.classList.add('d-none');
+                    // Submit Q button
+                    document.getElementById('submitQBtn').addEventListener('click', submitQ);
+                    
+                    // Make payment button
+                    document.getElementById('makePaymentBtn').addEventListener('click', makePayment);
+                    
+                    // Admin buttons
+                    document.getElementById('startGameBtn').addEventListener('click', startGame);
+                    document.getElementById('endRoundBtn').addEventListener('click', endRound);
+                    document.getElementById('distributeFundsBtn').addEventListener('click', distributeFunds);
+                    document.getElementById('resetGameBtn').addEventListener('click', resetGame);
+                    document.getElementById('checkFundsBtn').addEventListener('click', checkFundsDistribution);
                 }
                 
-            } catch (error) {
-                console.error("Error updating players list:", error);
-                showAlert("Error updating players list: " + error.message, "danger");
-            }
-        }
+                // Contract Interaction Functions
+                async function registerUser(dataQuality) {
+                    try {
+                        showLoading("Registering user...");
+                        
+                        await contract.methods.registerUser(dataQuality).send({ from: userAccount });
+                        
+                        showAlert("User registered successfully!", "success");
+                        await checkUserStatus();
+                        await updateGameState();
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error registering user:", error);
+                        showAlert("Error registering user: " + error.message, "danger");
+                    }
+                }
+                
+                async function submitQ() {
+                    try {
+                        showLoading("Submitting Q value...");
+                        
+                        await contract.methods.submitQ().send({ from: userAccount });
+                        
+                        showAlert("Q value submitted successfully!", "success");
+                        await updateGameState();
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error submitting Q:", error);
+                        showAlert("Error submitting Q: " + error.message, "danger");
+                    }
+                }
+                
+                async function makePayment() {
+                    try {
+                        showLoading("Processing payment...");
+                        
+                        // Get required payment amount
+                        const paymentAmount = await contract.methods.getRequiredPayment(userAccount).call();
+                        
+                        await contract.methods.makePayment().send({ 
+                            from: userAccount, 
+                            value: paymentAmount
+                        });
+                        
+                        showAlert("Payment made successfully!", "success");
+                        await updateGameState();
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error making payment:", error);
+                        showAlert("Error making payment: " + error.message, "danger");
+                    }
+                }
+                
+                async function startGame() {
+                    try {
+                        if (!isAdmin) {
+                            showAlert("Only admin can start the game", "warning");
+                            return;
+                        }
+                        
+                        showLoading("Starting game...");
+                        
+                        await contract.methods.startGame().send({ from: userAccount });
+                        
+                        showAlert("Game started successfully!", "success");
+                        await updateGameState();
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error starting game:", error);
+                        showAlert("Error starting game: " + error.message, "danger");
+                    }
+                }
+                
+                async function endRound() {
+                    try {
+                        if (!isAdmin) {
+                            showAlert("Only admin can end the round", "warning");
+                            return;
+                        }
+                        
+                        showLoading("Ending round...");
+                        
+                        await contract.methods.endRound().send({ from: userAccount });
+                        
+                        showAlert("Round ended successfully!", "success");
+                        await updateGameState();
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error ending round:", error);
+                        showAlert("Error ending round: " + error.message, "danger");
+                    }
+                }
+                
+                async function distributeFunds() {
+                    try {
+                        if (!isAdmin) {
+                            showAlert("Only admin can distribute funds", "warning");
+                            return;
+                        }
+                        
+                        showLoading("Distributing funds...");
+                        
+                        await contract.methods.distributeFunds().send({ from: userAccount });
+                        
+                        showAlert("Funds distributed successfully!", "success");
+                        await updateGameState();
+                        
+                        hideLoading();
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error distributing funds:", error);
+                        showAlert("Error distributing funds: " + error.message, "danger");
+                    }
+                }
 
-        // Update Network Info
-        async function updateNetworkInfo() {
-            try {
-                const networkId = await web3.eth.net.getId();
-                const networkNames = {
-                    1: "Ethereum Mainnet",
-                    3: "Ropsten Testnet",
-                    4: "Rinkeby Testnet",
-                    5: "Goerli Testnet",
-                    42: "Kovan Testnet",
-                    56: "BSC Mainnet",
-                    97: "BSC Testnet",
-                    137: "Polygon Mainnet",
-                    80001: "Mumbai Testnet",
-                    1337: "Local Network",
-                    31337: "Hardhat Network"
-                };
-                
-                const networkName = networkNames[networkId] || `Network ${networkId}`;
-                document.getElementById('networkBadge').textContent = networkName;
-                document.getElementById('networkBadge').classList.remove('bg-secondary');
-                document.getElementById('networkBadge').classList.add('bg-success');
-                
-            } catch (error) {
-                console.error("Error updating network info:", error);
-            }
-        }
-        
-        // Update Account Display
-        function updateAccountDisplay() {
-            if (userAccount) {
-                document.getElementById('connectWalletBtn').classList.add('d-none');
-                document.getElementById('accountInfo').classList.remove('d-none');
-                document.getElementById('accountAddress').textContent = shortenAddress(userAccount);
-            } else {
-                document.getElementById('connectWalletBtn').classList.remove('d-none');
-                document.getElementById('accountInfo').classList.add('d-none');
-            }
-        }
-        
-        // Handle Account Change
-        async function handleAccountsChanged(accounts) {
-            if (accounts.length === 0) {
-                userAccount = null;
-                isAdmin = false;
-                userRegistered = false;
-                updateAccountDisplay();
-                document.getElementById('adminPanel').classList.add('d-none');
-                showAlert("Disconnected from wallet", "warning");
-            } else if (accounts[0] !== userAccount) {
-                await connectAccount(accounts[0]);
-                showAlert("Account changed", "info");
-            }
-        }
-        
-        // Setup Event Listeners
-        function setupEventListeners() {
-            // Connect wallet button
-            document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
-            
-            // User registration form
-            document.getElementById('userRegistrationForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const dataQuality = document.getElementById('dataQuality').value;
-                await registerUser(dataQuality);
-            });
-            
-            // Submit Q button
-            document.getElementById('submitQBtn').addEventListener('click', submitQ);
-            
-            // Make payment button
-            document.getElementById('makePaymentBtn').addEventListener('click', makePayment);
-            
-            // Admin buttons
-            document.getElementById('startGameBtn').addEventListener('click', startGame);
-            document.getElementById('endRoundBtn').addEventListener('click', endRound);
-            document.getElementById('distributeFundsBtn').addEventListener('click', distributeFunds);
-            document.getElementById('checkFundsBtn').addEventListener('click', checkFundsDistribution);
-        }
-        
-        // Contract Interaction Functions
-        async function registerUser(dataQuality) {
-            try {
-                showLoading("Registering user...");
-                
-                await contract.methods.registerUser(dataQuality).send({ from: userAccount });
-                
-                showAlert("User registered successfully!", "success");
-                await checkUserStatus();
-                await updateGameState();
-                
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                console.error("Error registering user:", error);
-                showAlert("Error registering user: " + error.message, "danger");
-            }
-        }
-        
-        async function submitQ() {
-            try {
-                showLoading("Submitting Q value...");
-                
-                await contract.methods.submitQ().send({ from: userAccount });
-                
-                showAlert("Q value submitted successfully!", "success");
-                await updateGameState();
-                
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                console.error("Error submitting Q:", error);
-                showAlert("Error submitting Q: " + error.message, "danger");
-            }
-        }
-        
-        async function makePayment() {
-            try {
-                showLoading("Processing payment...");
-                
-                // Get required payment amount
-                const paymentAmount = await contract.methods.getRequiredPayment(userAccount).call();
-                
-                await contract.methods.makePayment().send({ 
-                    from: userAccount, 
-                    value: paymentAmount
-                });
-                
-                showAlert("Payment made successfully!", "success");
-                await updateGameState();
-                
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                console.error("Error making payment:", error);
-                showAlert("Error making payment: " + error.message, "danger");
-            }
-        }
-        
-        async function startGame() {
-            try {
-                if (!isAdmin) {
-                    showAlert("Only admin can start the game", "warning");
-                    return;
+                // NEW: Reset Game Function
+                async function resetGame() {
+                    try {
+                        if (!isAdmin) {
+                            showAlert("Only admin can reset the game", "warning");
+                            return;
+                        }
+                        
+                        if (!isConvergedStatus) {
+                            showAlert("Game must be converged before resetting", "warning");
+                            return;
+                        }
+                        
+                        if (confirm("Are you sure you want to reset the game? This will:\n\n• Refund any remaining contract balance to admin\n• Clear all users and their data\n• Reset the game to initial state\n\nThis action cannot be undone!")) {
+                            showLoading("Resetting game... Please wait.");
+                            
+                            await contract.methods.resetGame().send({ 
+                                from: userAccount,
+                                gas: 3000000 // Higher gas limit for clearing arrays
+                            });
+                            
+                            showAlert("✅ Game reset successfully! A new game round can now begin.", "success");
+                            
+                            // Clear local state
+                            userRegistered = false;
+                            userIndex = null;
+                            userType = null;
+                            priceHistory = { p1: [], p2: [], rounds: [] };
+                            updatePriceChart();
+                            
+                            // Refresh all data
+                            await updateGameState();
+                            await checkUserStatus();
+                            
+                            hideLoading();
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        console.error("Error resetting game:", error);
+                        showAlert("Error resetting game: " + error.message, "danger");
+                    }
                 }
                 
-                showLoading("Starting game...");
-                
-                await contract.methods.startGame().send({ from: userAccount });
-                
-                showAlert("Game started successfully!", "success");
-                await updateGameState();
-                
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                console.error("Error starting game:", error);
-                showAlert("Error starting game: " + error.message, "danger");
-            }
-        }
-        
-        async function endRound() {
-            try {
-                if (!isAdmin) {
-                    showAlert("Only admin can end the round", "warning");
-                    return;
+                async function checkFundsDistribution() {
+                    try {
+                        const debugInfo = await contract.methods.debugFundDistribution().call();
+                        
+                        document.getElementById('debugContractBalance').textContent = debugInfo.contractBalance + " wei";
+                        document.getElementById('debugRequiredFunds').textContent = debugInfo.totalRequired + " wei";
+                        document.getElementById('debugCenterRevenue').textContent = debugInfo.centerRevenue + " wei";
+                        document.getElementById('debugDroneRevenue').textContent = debugInfo.droneRevenue + " wei";
+                        document.getElementById('debugCompensationOwed').textContent = debugInfo.compensationOwed + " wei";
+                        
+                        document.getElementById('fundDebugInfo').classList.remove('d-none');
+                    } catch (error) {
+                        console.error("Error checking fund distribution:", error);
+                        showAlert("Error checking fund distribution: " + error.message, "danger");
+                    }
                 }
                 
-                showLoading("Ending round...");
-                
-                await contract.methods.endRound().send({ from: userAccount });
-                
-                showAlert("Round ended successfully!", "success");
-                await updateGameState();
-                
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                console.error("Error ending round:", error);
-                showAlert("Error ending round: " + error.message, "danger");
-            }
-        }
-        
-        async function distributeFunds() {
-            try {
-                if (!isAdmin) {
-                    showAlert("Only admin can distribute funds", "warning");
-                    return;
+                // Helper Functions
+                function shortenAddress(address) {
+                    return address.substring(0, 6) + "..." + address.substring(address.length - 4);
                 }
                 
-                showLoading("Distributing funds...");
-                
-                await contract.methods.distributeFunds().send({ from: userAccount });
-                
-                showAlert("Funds distributed successfully!", "success");
-                await updateGameState();
-                
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                console.error("Error distributing funds:", error);
-                showAlert("Error distributing funds: " + error.message, "danger");
-            }
-        }
-        
-        async function checkFundsDistribution() {
-            try {
-                const debugInfo = await contract.methods.debugFundDistribution().call();
-                
-                document.getElementById('debugContractBalance').textContent = debugInfo.contractBalance + " wei";
-                document.getElementById('debugRequiredFunds').textContent = debugInfo.totalRequired + " wei";
-                document.getElementById('debugCenterRevenue').textContent = debugInfo.centerRevenue + " wei";
-                document.getElementById('debugDroneRevenue').textContent = debugInfo.droneRevenue + " wei";
-                document.getElementById('debugCompensationOwed').textContent = debugInfo.compensationOwed + " wei";
-                
-                document.getElementById('fundDebugInfo').classList.remove('d-none');
-            } catch (error) {
-                console.error("Error checking fund distribution:", error);
-                showAlert("Error checking fund distribution: " + error.message, "danger");
-            }
-        }
-        
-        // Helper Functions
-        function shortenAddress(address) {
-            return address.substring(0, 6) + "..." + address.substring(address.length - 4);
-        }
-        
-        function showAlert(message, type) {
-            const alertId = "alert-" + Date.now();
-            const alertHtml = `
-                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show flash-message" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            
-            document.getElementById('flashMessages').insertAdjacentHTML('beforeend', alertHtml);
-            
-            // Auto dismiss after 5 seconds
-            setTimeout(() => {
-                const alertElement = document.getElementById(alertId);
-                if (alertElement) {
-                    alertElement.classList.remove('show');
-                    setTimeout(() => alertElement.remove(), 500);
+                function showAlert(message, type) {
+                    const alertId = "alert-" + Date.now();
+                    const alertHtml = `
+                        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show flash-message" role="alert">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                    
+                    document.getElementById('flashMessages').insertAdjacentHTML('beforeend', alertHtml);
+                    
+                    // Auto dismiss after 5 seconds
+                    setTimeout(() => {
+                        const alertElement = document.getElementById(alertId);
+                        if (alertElement) {
+                            alertElement.classList.remove('show');
+                            setTimeout(() => alertElement.remove(), 500);
+                        }
+                    }, 5000);
                 }
-            }, 5000);
-        }
-        
-        function showLoading(message = "Processing...") {
-            document.getElementById('loadingMessage').textContent = message;
-            document.getElementById('loadingOverlay').style.visibility = "visible";
-        }
-        
-        function hideLoading() {
-            document.getElementById('loadingOverlay').style.visibility = "hidden";
-        }
+                
+                function showLoading(message = "Processing...") {
+                    document.getElementById('loadingMessage').textContent = message;
+                    document.getElementById('loadingOverlay').style.visibility = "visible";
+                }
+                
+                function hideLoading() {
+                    document.getElementById('loadingOverlay').style.visibility = "hidden";
+                }
 
-        // Initialize the application when the DOM is ready
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
-</body>
-</html>
+                // Initialize the application when the DOM is ready
+                document.addEventListener('DOMContentLoaded', init);
+            </script>
+        </body>
+        </html>
